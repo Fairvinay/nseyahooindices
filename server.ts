@@ -30,9 +30,7 @@ const __dirnameAct = path.dirname(__dirname);
 // 🔐 STEP 2: CREATE HTTPS SERVER (THIS IS THE KNOT)
 //
  
-const server = app.listen(PORT, () => {
-  console.log(`Server running on ${PORT}`);
-}); 
+ 
 //const server = https.createServer(sslOptions, app);
 
 // Cookie jar (important for NSE)
@@ -200,6 +198,10 @@ app.get("/api/market", async (req, res) => {
   res.json(data);
 });
 
+
+const server = app.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
+});
 
 //
 // 🔌 STEP 4: ATTACH WEBSOCKET TO SAME HTTPS SERVER
