@@ -10,13 +10,38 @@ import path from 'path';
 
 
 const app = express();
-app.use(cors());
+//app.use(cors());
 
 const PORT = process.env.PORT || 10000;
+const hostUrl = process.env.HOST_URL || `http://localhost:${PORT}`
 
 const __dirnameAct = path.dirname(__dirname);
 
   console.log("Server starting eith __dirname  "+ __dirnameAct);
+
+// Enable CORS for all routes
+const corsOrigins = process.env.CORS_ORIGINS ? 
+  process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()) : 
+  [];
+
+const corsMethods = process.env.CORS_METHODS ? 
+  process.env.CORS_METHODS.split(',').map(method => method.trim()) : 
+  ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'];
+
+const corsHeaders = process.env.CORS_HEADERS ? 
+  process.env.CORS_HEADERS.split(',').map(header => header.trim()) : 
+  ['Content-Type', 'Authorization'];
+
+app.use(cors({
+  origin: [
+    ...corsOrigins,
+    /^http:\/\/localhost:\d+$/,  // Allow any localhost port
+    /^http:\/\/127\.0\.0\.1:\d+$/ // Allow any 127.0.0.1 port
+  ],
+  methods: corsMethods,
+  allowedHeaders: corsHeaders,
+  credentials: process.env.CORS_CREDENTIALS !== 'true'
+}));
 
 
 // 🔐 STEP 1: LOAD SSL CERTIFICATES
@@ -201,6 +226,15 @@ app.get("/api/market", async (req, res) => {
 
 const server = app.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
+   // Log CORS configuration
+        if (corsOrigins.length > 0) {
+            console.log(`CORS Origins: ${corsOrigins.join(', ')}`);
+        }
+        console.log(`CORS Methods: ${corsMethods.join(', ')}`);
+        console.log(`CORS Headers: ${corsHeaders.join(', ')}`);
+        console.log(`CORS Credentials: ${process.env.CORS_CREDENTIALS !== undefined ? process.env.CORS_CREDENTIALS : false}`);
+
+
 });
 
 //
