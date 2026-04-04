@@ -166,6 +166,49 @@ async function fetchNSE() {
   }
 }
 
+async function fetchYahooIndex(symbol: string, name: string) {
+  try {
+    const res = await axios.get(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=2m&range=1d`,
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0"
+        }
+      }
+    );
+
+    const meta = res.data?.chart?.result?.[0]?.meta;
+
+    const price = meta?.regularMarketPrice;
+    const prev = meta?.previousClose;
+
+       let extrated = {"key":"INDICES ELIGIBLE IN DERIVATIVES","index":name,"indexSymbol":name,"last": meta?.regularMarketPrice,"variation":meta?.regularMarketPrice - meta?.previousClose,
+  "percentChange": ((meta?.regularMarketPrice - meta?.previousClose) /
+          meta?.previousClose) *
+        100,"open":'',
+"high":meta?.regularMarketDayHigh,"low":meta?.regularMarketDayLow,"previousClose":meta?.previousClose,"yearHigh":'',"yearLow":'',"indicativeClose":0,"pe":"19.96","pb":"3.1","dy":"1.37",
+"declines":"26","advances":"24","unchanged":"0","perChange365d":-2.31,"perChange30d":-8.66,"date365dAgo":"26-Mar-2025","date30dAgo":"24-Feb-2026",
+"previousDay":"27-Mar-2026","oneWeekAgo":"20-Mar-2026","oneMonthAgoVal":25424.65,"oneWeekAgoVal":23114.5,"oneYearAgoVal":23486.85,
+"previousDayVal":22819.6,"chart365dPath":"","chart30dPath":"",
+"chartTodayPath":""}
+
+
+	    return extrated;
+
+
+   /* return {
+      name,
+      value: price,
+      change: price - prev,
+      percent: ((price - prev) / prev) * 100
+    };*/
+
+  } catch (err) {
+    console.log(`❌ ${name} fetch failed`);
+    return null;
+  }
+}
+
 // 🔹 YAHOO FALLBACK
 async function fetchYahoo() {
   try {
@@ -192,9 +235,38 @@ async function getMarketData() {
     const data = await fetchNSE();
     // filter only NIFTY 50 and NIFTY BANK
 
-    const raw = data?.data || [];
+    let raw = data?.data || [];
+    // in case raw is empty array i.e. NSE init failed 
 
-    const filtered = raw.filter((item: any) =>
+    if (raw === undefined || (Array.isArray(raw) && raw.length ==0 )) {
+  	// call the fetchYahooIndex for NIFTY 50 and NIFTY BANK 
+        let  newData  = await fetchYahooIndex("^NSEI", "NIFTY 50");
+	if( raw === undefined ) {
+	  let k = [];
+	     k.push (	newData);
+	 raw = k;   //[ newData; //?.data || [];
+	} 
+	else {
+		raw.push(newData);
+	}
+              	 let  newDataSensex =  fetchYahooIndex("^NSEBANK", "BANK NIFTY");
+	 if (raw !== undefined && (Array.isArray(raw) && raw.length >=0 )) {
+		 if (newDataSensex !== undefined ){     // && (Array.isArray(newDataSensex?.data) && newDataSensex?.data.length >=0 )
+                           // if (   (Array.isArray(raw) && raw.length ==0 )) {
+				  let senraw = 	 newDataSensex; // ?.data || [];
+				raw.push (senraw);	
+                           //  }
+		 }
+		else {
+			console.log("⚠️ Yahoo chart v8  BANK NIFTY, fetch failed ");
+		}
+         } 
+	 else { 
+		console.log("⚠️ Yahoo chart v8 NIFTY 50 , fetch failed ");
+
+         } 
+   }
+    let filtered = raw.filter((item: any) =>
       item.index === "NIFTY 50" || item.index === "NIFTY BANK"
     );
     const sensex = await fetchSensex(); // 🔥 from Yahoo
@@ -207,6 +279,7 @@ async function getMarketData() {
 
     try {
       const data = await fetchYahoo();
+
       cachedData = { source: "YAHOO", data };
     } catch {
       cachedData = { source: "NONE", data: null };
